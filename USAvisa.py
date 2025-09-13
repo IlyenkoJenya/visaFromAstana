@@ -1,4 +1,3 @@
-import os
 import time
 
 from selenium import webdriver
@@ -9,39 +8,41 @@ from selenium.webdriver.support import expected_conditions as EC
 from config import LOGIN, PASSWORD, CHECK_PAGE, BOT_TOKEN, CHAT_ID_SERVICE, CHAT_ID
 import telebot
 
-login = LOGIN
-password = PASSWORD
-checkPage = CHECK_PAGE
+login = LOGIN  # your login from https://ais.usvisa-info.com/
+password = PASSWORD  # your website password from https://ais.usvisa-info.com/
+checkPage = CHECK_PAGE  # the page whera you need to pay. For instance,
+# https://ais.usvisa-info.com/ru-kz/niv/schedule/yourID/payment
 
 
-bot = telebot.TeleBot(BOT_TOKEN)
-chatId_service = CHAT_ID_SERVICE
-chatId = CHAT_ID
+bot = telebot.TeleBot(BOT_TOKEN)  # telegram token
+chatId_service = CHAT_ID_SERVICE  # chat id
+chatId = CHAT_ID  # chat id
+
+
 def mainFunc():
     options = Options()
     options.add_argument("--window-size=1920,1080")
     options.add_argument("--disable-extensions")
     options.add_argument("--start-maximized")
-    options.add_argument("--headless=new")  # новый headless
+    options.add_argument("--headless=new")
     options.add_argument("--disable-dev-shm-usage")
     options.add_argument("--no-sandbox")
     options.add_argument("--ignore-certificate-errors")
     options.add_argument("--disable-blink-features=AutomationControlled")
 
-    # реальный user-agent
+    #  user-agent
     options.add_argument("user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
                          "AppleWebKit/537.36 (KHTML, like Gecko) "
                          "Chrome/140.0.7339.133 Safari/537.36")
 
     driver = webdriver.Chrome(options=options)
 
-    # убрать webdriver-след
+    #  remove WebDriver traces
     driver.execute_cdp_cmd(
         "Page.addScriptToEvaluateOnNewDocument",
         {"source": "Object.defineProperty(navigator, 'webdriver', {get: () => undefined})"}
     )
     driver.maximize_window()
-
 
     driver.get(checkPage)
 
@@ -50,7 +51,6 @@ def mainFunc():
     )
     ok_button.click()
     time.sleep(2)
-
 
     input_imail = WebDriverWait(driver, 10).until(
         EC.element_to_be_clickable((By.ID, 'user_email'))
@@ -62,7 +62,6 @@ def mainFunc():
     )
     input_password.send_keys(password)
 
-
     checkbox = WebDriverWait(driver, 20).until(
         EC.presence_of_element_located((By.ID, "policy_confirmed"))
     )
@@ -70,26 +69,26 @@ def mainFunc():
 
     driver.find_element(By.NAME, "commit").click()
 
-    print('я тут')
-    # Ждём появления строки с Astana
+    # waiting for tr teg
     astana_row = WebDriverWait(driver, 20).until(
         EC.presence_of_element_located((By.XPATH, "//tr[td[contains(., 'Astana')]]"))
     )
 
-    # Взять текст второй ячейки (status)
+    # choose the correct status
     status_text = astana_row.find_element(By.XPATH, "./td[@class='text-right']").text.strip()
 
-    if status_text != "В данный момент запись невозможна.":
-        bot.send_message(chatId, 'Запись есть ✅', parse_mode='html')
+    if status_text != "В данный момент запись невозможна.": # You must replace this text with your own text
+        bot.send_message(chatId, 'slots are available ✅', parse_mode='html')
     else:
-        bot.send_message(chatId_service, 'Записи нет ❌', parse_mode='html')
+        bot.send_message(chatId_service, 'slots are not available ❌', parse_mode='html')
     time.sleep(120)
+
 
 if __name__ == '__main__':
     while True:
         try:
             mainFunc()
         except Exception as e:
-            bot.send_message(chatId_service, f'ошибка {e}', parse_mode='html')
-            print(f"ошибка: {str(e)}")
+            bot.send_message(chatId_service, f'Error {e}', parse_mode='html')
+            print(f"Error: {str(e)}")
             time.sleep(10)
