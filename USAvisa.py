@@ -69,15 +69,16 @@ def mainFunc():
 
     driver.find_element(By.NAME, "commit").click()
 
-    # waiting for tr teg
+    # ждем строку с "Astana"
     astana_row = WebDriverWait(driver, 20).until(
         EC.presence_of_element_located((By.XPATH, "//tr[td[contains(., 'Astana')]]"))
     )
 
-    # choose the correct status
+    # получаем текст статуса
     status_text = astana_row.find_element(By.XPATH, "./td[@class='text-right']").text.strip()
 
-    if status_text != "В данный момент запись невозможна.": # You must replace this text with your own text
+    # проверяем условие
+    if status_text.lower() != "в данный момент запись невозможна.".lower():
         bot.send_message(chatId, 'slots are available ✅', parse_mode='html')
     else:
         bot.send_message(chatId_service, 'slots are not available ❌', parse_mode='html')
